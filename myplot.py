@@ -349,20 +349,55 @@ def cs_2d_5cluster(cells, pdt=None, f=None, norm=True):
 
 
 def cs_3d_5cluster(cells, pdt=None, f=None, norm=True):
+    mmuh=[c.MaxKMaxUHeat for c in cells]
+    amuh=[c.AvgMaxUHeat for c in cells]
     uh=[c.uHeat for c in cells]
     rh=[c.rHeat for c in cells]
     ch=[c.dHeat for c in cells]
     if not f:
+        draw3d_heat(cells, mmuh, pdt=pdt)
+        draw3d_heat(cells, amuh, pdt=pdt)
         draw3d_heat(cells, uh, pdt=pdt)
         draw3d_heat(cells, rh, pdt=pdt)
         draw3d_heat(cells, ch, pdt=pdt)
     else:
         if norm:
+            draw3d_heat(cells, mmuh, pdt=pdt, fn=f+"_mmuh_n")
+            draw3d_heat(cells, amuh, pdt=pdt, fn=f+"_amuh_n")
             draw3d_heat(cells, uh, pdt=pdt, fn=f+"_uh_n")
         else:
+            draw3d_heat(cells, mmuh, pdt=pdt, fn=f+"_mmuh")
+            draw3d_heat(cells, amuh, pdt=pdt, fn=f+"_amuh")
             draw3d_heat(cells, uh, pdt=pdt, fn=f+"_uh")
         draw3d_heat(cells, rh, pdt=pdt, fn=f+"_rh")
         draw3d_heat(cells, ch, pdt=pdt, fn=f+"_ch")
+    print("corrcoef")
+    print('$(uh, mmuh)', np.corrcoef([uh, mmuh]))
+    print('$(uh, amuh)', np.corrcoef([uh, amuh]))
+    print('$(mmuh, amuh)', np.corrcoef([mmuh, amuh]))
+    # distance.jensenshannon is to calculate JS distance, so there should be a "**2" so as to get JS divergence
+    # to normalize the JS divergence from 0 to 1, we choose base 2
+    min_mmuh = min(mmuh)
+    max_mmuh = max(mmuh)
+    mmuh = [(i - min_mmuh) / (max_mmuh - min_mmuh) for i in mmuh]
+    min_amuh = min(amuh)
+    max_amuh = max(amuh)
+    amuh = [(i - min_amuh) / (max_amuh - min_amuh) for i in amuh]
+
+    min_uh = min(uh)
+    max_uh = max(uh)
+    uh = [(i - min_uh) / (max_uh - min_uh) for i in uh]
+    min_ch = min(ch)
+    max_ch = max(ch)
+    ch = [(i - min_ch) / (max_ch - min_ch) for i in ch]
+    min_rh = min(rh)
+    max_rh = max(rh)
+    rh = [(i - min_rh) / (max_rh - min_rh) for i in rh]
+    print("js, bc")
+    print('(uh, mmuh)', distance.jensenshannon(uh, mmuh, base=2) ** 2, bhattacharyya_coefficient(uh, mmuh))
+    print('(uh, amuh)', distance.jensenshannon(uh, amuh, base=2) ** 2, bhattacharyya_coefficient(uh, amuh))
+    print('(mmuh, amuh)',distance.jensenshannon(mmuh, amuh, base=2) ** 2, bhattacharyya_coefficient(mmuh, amuh))
+
 
 def draw_2d_pdt(pdt_ta, f=None):
     fig = plt.figure()

@@ -74,7 +74,7 @@ class cell:
         self.rHeat = 0.0
         self.dHeat = 0.0
         self.MaxKMaxUHeat=0.0
-
+        self.AvgMaxUHeat=0.0
         self.cur_l = cur_level
         self.tar_l = tar_level
         self.k = K
@@ -218,6 +218,30 @@ class cell:
                         s.append(tmp_score)
                 scores.append(s)
 
+    def cal_mm_am_uHeats(self, data):
+        mina=[]
+        maxa=[]
+        for i in self.rkskyband:
+            maxv=0
+            minv=1e9
+            for v in self.vertexes:
+                tmp_score = np.dot(v, data[i])
+                if norm_w:
+                    tmp_score /= vector_len(v)
+                if maxv<tmp_score:
+                    maxv=tmp_score
+                if minv>tmp_score:
+                    minv=tmp_score
+            mina.append(minv)
+            maxa.append(maxv)
+        maxa=sorted(maxa, reverse=True)
+        self.MaxKMaxUHeat=maxa[self.k-1]
+        self.AvgMaxUHeat=float(sum(maxa))/len(maxa)
+        mina=sorted(mina, reverse=True)
+        assert((mina[self.k-1]-self.uHeat)<=self.uHeat*0.01)
+
+
+
     def MDAp_insert(self, parent_sRSK, data, ret):
         lbs = [0.0 for _ in range(len(parent_sRSK))]
         ubs = [0.0 for _ in range(len(parent_sRSK))]
@@ -250,6 +274,7 @@ class cell:
             # the other option's minimum score must be lower than k-th option's corresponding score
             self.rHeat=len(self.rkskyband)
             # self.dHeat: updated in self.MDA_superSet2RKS(data)
+            self.cal_mm_am_uHeats(data)
             ret.append(self)
             if len(ret)%1000==0:
                 print(len(ret))
@@ -334,10 +359,11 @@ def main():
         # myplot.cs_2d_5cluster(cells=ret, pdt=pdt_ksky, f="./cs5_anti1K3d_la/"+'cs5_K'+str(k)+'H'+str(h), norm=norm_w)
         # myplot.draw_3d_pdt(pdt_ksky, f='./NBA-2021-22-out/sky-SF.png')
         # myplot.draw_3d_pdt(pdt_ksky, f='./NBA-2021-22-out/sky2-SF.png', view=True)
-        # myplot.cs_3d_5cluster(cells=ret, pdt=[], f="./NBA-2021-22-out/"+'cs-C_K'+str(k)+'H'+str(h)+'_'+attrstr, norm=norm_w)
+        myplot.cs_3d_5cluster(cells=ret, pdt=[], f="./NBA-2021-22-out/"+'cs-C_K'+str(k)+'H'+str(h)+'_'+attrstr, norm=norm_w)
         # myplot.cs_3d_5cluster(cells=ret, pdt=pdt_ksky, f="./NBA-2021-22-out/"+'cs6_K'+str(k)+'H'+str(h)+attrstr, norm=norm_w)
+        # myplot.cs_3d_5cluster(cells=ret, pdt=[], norm=norm_w)
 
-        myplot.cs_3d_5cluster(cells=ret, pdt=pdt_ksky, norm=norm_w)
+        # myplot.cs_3d_5cluster(cells=ret, pdt=pdt_ksky, norm=norm_w)
 
         # myplot.cs1_plot(ret, pdt_ksky, user_ta[:, attrs], attrstr, root=r)
         # myplot.cs2_plot(ret, pdt_ksky, user_ta[:, attrs], attrstr)
